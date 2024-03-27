@@ -40,6 +40,9 @@ def resam_calendar(
     if not len(calendar_raw):
         return calendar_raw
 
+    if freq_sam.base == Freq.NORM_FREQ_SECOND or freq_raw.base == Freq.NORM_FREQ_SECOND:
+        raise ValueError("sampling second calendar not implemented")
+
     # if freq_sam is xminute, divide each trading day into several bars evenly
     if freq_sam.base == Freq.NORM_FREQ_MINUTE:
         if freq_raw.base != Freq.NORM_FREQ_MINUTE:
@@ -80,6 +83,7 @@ def get_higher_eq_freq_feature(instruments, fields, start_time=None, end_time=No
     from ..data.data import D  # pylint: disable=C0415
 
     try:
+        print(instruments, fields, start_time, end_time, freq, disk_cache)
         _result = D.features(instruments, fields, start_time, end_time, freq=freq, disk_cache=disk_cache)
         _freq = freq
     except (ValueError, KeyError) as value_key_e:
