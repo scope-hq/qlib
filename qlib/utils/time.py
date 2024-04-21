@@ -179,7 +179,9 @@ class Freq:
 
         """
         freq = freq.lower()
-        match_obj = re.match("^([0-9]*)(month|mon|week|w|day|d|minute|min|sec)$", freq)
+        match_obj = re.match(
+            "^([0-9]*)(month|mon|week|w|day|d|minute|min|sec|s)$", freq
+        )
         if match_obj is None:
             raise ValueError(
                 "freq format is not supported, the freq should be like (n)month/mon, (n)week/w, (n)day/d, (n)minute/min, (n)sec"
@@ -196,6 +198,7 @@ class Freq:
             "minute": Freq.NORM_FREQ_MINUTE,
             "min": Freq.NORM_FREQ_MINUTE,
             "sec": Freq.NORM_FREQ_SECOND,
+            "s": Freq.NORM_FREQ_SECOND,
         }
         return _count, _freq_format_dict[_freq]
 

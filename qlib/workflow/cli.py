@@ -5,9 +5,11 @@ import sys
 import os
 from pathlib import Path
 
+import datetime
 import qlib
 import fire
 import ruamel.yaml as yaml
+import pandas as pd
 from qlib.config import C
 from qlib.model.trainer import task_train
 from qlib.utils.data import update_config
@@ -47,6 +49,16 @@ def sys_config(config, config_path):
         sys.path.append(str(Path(config_path).parent.resolve().absolute() / p))
 
 
+def convert_timezone(config, timezone):
+    for k, v in config.items():
+        if isinstance(v, dict):
+            convert_timezone(v, timezone)
+        elif isinstance(v, pd.Timestamp):
+            continue
+        elif isinstance(v, datetime.date):
+            config[k] = pd.Timestamp(v, tz=timezone).tz_convert(None)
+
+
 # workflow handler function
 def workflow(config_path, experiment_name="workflow", uri_folder="mlruns"):
     """
@@ -70,6 +82,10 @@ def workflow(config_path, experiment_name="workflow", uri_folder="mlruns"):
     with open(config_path) as fp:
         config = yaml.safe_load(fp)
 
+    if config["qlib_init"]["region"] == "cn":
+        # change every date variable of config to China timezone
+        convert_timezone(config, "Asia/Hong_Kong")
+
     base_config_path = config.get("BASE_CONFIG_PATH", None)
     if base_config_path:
         logger.info(f"Use BASE_CONFIG_PATH: {base_config_path}")
@@ -83,11 +99,15 @@ def workflow(config_path, experiment_name="workflow", uri_folder="mlruns"):
                 f"Can't find BASE_CONFIG_PATH base on: {Path.cwd()}, "
                 f"try using relative path to config path: {Path(config_path).absolute()}"
             )
-            relative_path = Path(config_path).absolute().parent.joinpath(base_config_path)
+            relative_path = (
+                Path(config_path).absolute().parent.joinpath(base_config_path)
+            )
             if relative_path.exists():
                 path = relative_path
             else:
-                raise FileNotFoundError(f"Can't find the BASE_CONFIG file: {base_config_path}")
+                raise FileNotFoundError(
+                    f"Can't find the BASE_CONFIG file: {base_config_path}"
+                )
 
         with open(path) as fp:
             base_config = yaml.safe_load(fp)
@@ -101,7 +121,9 @@ def workflow(config_path, experiment_name="workflow", uri_folder="mlruns"):
         qlib.init(**config.get("qlib_init"))
     else:
         exp_manager = C["exp_manager"]
-        exp_manager["kwargs"]["uri"] = "file:" + str(Path(os.getcwd()).resolve() / uri_folder)
+        exp_manager["kwargs"]["uri"] = "file:" + str(
+            Path(os.getcwd()).resolve() / uri_folder
+        )
         qlib.init(**config.get("qlib_init"), exp_manager=exp_manager)
 
     if "experiment_name" in config:
