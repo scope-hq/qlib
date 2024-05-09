@@ -1329,5 +1329,6 @@ def register_all_wrappers(C):
     register_wrapper(DatasetD, _dprovider, "qlib.data")
     logger.debug(f"registering DatasetD {C.dataset_provider}-{C.dataset_cache}")
 
-    register_wrapper(D, C.provider, "qlib.data")
+    _provider = init_instance_by_config(C.provider, module)
+    register_wrapper(D, _provider, "qlib.data")
     logger.debug(f"registering D {C.provider}")
